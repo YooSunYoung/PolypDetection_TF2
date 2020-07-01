@@ -13,9 +13,10 @@ VitisAIForPolyp
 After running data pre-processing and training, more directories will be added like below.
 ```
     ├───data
-    │     ├───all_data
-    │     ├───data_train
-    │     └───data_valid
+    │     ├───PolypImages
+    │     ├───PolypImages_train
+    │     ├───PolypImages_aug
+    │     └───PolypImages_valid
     └───results
           ├───checkpoints
           ├───logs
@@ -53,13 +54,28 @@ The size and the number of the channels(color) of images are stated in the `Mode
 The dataset should be a set of image(`.bmp` or `.jpg`) and label(`.xml`) pairs.
 In the label(`.xml`) file, it should include the `filename`, image `size` (which consists of `width`, `height`, `channel`)
 and the `object` which is the information of polyp in this case.
-`object` should includes the `name` of the object which is 'Polyp' in this case,
-and the  
+
+`object` should includes the `name` of the object which is 'Polyp' in this case.
+It also has to include the location of the bounding box around the polyp as `xmin`, `ymin`, `xmax` and `ymax`.
+
+The image files and the xml files should have same name before their file execution tag.
+It would be easier to put all the data in one directory. For example,
+```
+├───data
+      ├───PolypImages
+            ├─── 001.bmp
+            ├─── 001.xml
+            ├─── 002.bmp
+            ├─── 002.xml
+                    .
+                    .
+                    .
+```
+
 ### Data Pre-processing
 #### 1. Split data into Train/Valid/Test set
 
-Here is how to use `Utils/split_dataset.py` with options to split dataset.
-It splits the dataset randomly into `training`, `validation` and `test` dataset.
+Here is how to use `Utils/split_dataset.py` to split dataset randomly into `training`, `validation` and `test` sets.
 Before you split the dataset all the dataset including images and the label files(usually .xml files) should be in one directory.
 It doesn't remove the files in the `data_dir` but copy them in to other directories. 
 
@@ -101,6 +117,8 @@ python Utils/image_to_tf.py \
                         --valid_output_file ./data/polyp_valid.tfrecord \
                         --classes ./data/polyp.names
 ```
+> I put `./data/PolypImages_aug` into the `--train_data_dir` tag since I used the augmented images as a training dataset.
+ 
 ### Models
 
 

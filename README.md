@@ -31,7 +31,7 @@ There are also pip recipes.
 ```bash
 # Tensorflow CPU
 conda env create -f conda-cpu.yml
-conda activate yolov3-tf2-cpu
+conda activate polyp-tf2-cpu
 ```
 
 <!-- 

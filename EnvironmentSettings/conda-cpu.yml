@@ -1,4 +1,4 @@
-name: yolov3-tf2-cpu
+name: polyp-tf-cpu
 channels:
   - conda-forge
   - defaults

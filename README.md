@@ -120,10 +120,37 @@ python Utils/image_to_tf.py \
 > I put `./data/PolypImages_aug` into the `--train_data_dir` tag since I used the augmented images as a training dataset.
  
 ### Models
+<!-- description for the models needed-->
+- `Models/config.py` contains the information as a dictionary variable `configuration`.
+  If you change the content in the `configuration` and it would affect all other processes.
+  You may also put the information as arguments to the specific methods.
+- `Models/dataset.py` contains the `PolypDataset` class and its static methods.
+- `Models/models.py` contains the `PolypDetectionModel` class.
+  For now, the only model is modified squeezenet.
 
 ### Training
 
-### Evaluation
+```bash
+python Training/train.py \
+                        --dataset ./data/polyp_train.tfrecord \
+                        --val_dataset ./data/polyp_valid.tfrecord \
+                        --classes ./data/polyp.names \
+                        --checkpoint_dir_path ./results/checkpoints \
+                        --log_dir_path ./results/log \
+                        --tflite_model_dir_path ./results/TfliteModel \
+                        --epochs 1000 \
+                        --save_points 50 \
+                        --batch_size 1 \
+                        --learning_rate 1e-3 
+```
 
+### Evaluation
+```
+python Utils/detect.py \
+                    --classes ./data/polyp.names
+                    --weights ./results/checkpoints/polyp_train_50.tf
+                    --image ./data/PolypImages_test/001.bmp
+                    --output ./output.jpg
+```
 ### Postprocessing (Weight and Model files) 
 

@@ -147,9 +147,9 @@ python Training/train.py \
 ### Evaluation
 ```
 python Utils/detect.py \
-                    --classes ./data/polyp.names
-                    --weights ./results/checkpoints/polyp_train_50.tf
-                    --image ./data/PolypImages_test/001.bmp
+                    --classes ./data/polyp.names \ 
+                    --weights ./results/checkpoints/polyp_train_50.tf \
+                    --image ./data/PolypImages_test/001.bmp \
                     --output ./output.jpg
 ```
 ### Postprocessing (Weight and Model files) 

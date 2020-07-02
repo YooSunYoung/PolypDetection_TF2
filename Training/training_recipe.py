@@ -7,7 +7,7 @@ def set_settings(flags):
                         'path to weights file')
     flags.DEFINE_string('checkpoint_dir_path', './results/checkpoints', 'path to checkpoint directory')
     flags.DEFINE_string('log_dir_path', './results/', 'path to log directory')
-    flags.DEFINE_string('tflite_model_dir_path', './results/checkpoints', 'path to tflite model directory')
+    flags.DEFINE_string('tflite_model_dir_path', './results/TfliteModel', 'path to tflite model directory')
     flags.DEFINE_string('classes', './data/polyp.names', 'path to classes file')
     flags.DEFINE_enum('mode', 'eager_tf', ['fit', 'eager_fit', 'eager_tf'],
                       'fit: model.fit, '

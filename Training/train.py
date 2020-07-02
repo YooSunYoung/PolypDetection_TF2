@@ -1,12 +1,11 @@
 from absl import app, flags, logging
 from absl.flags import FLAGS
-
-from Training import training_recipe
-from Utils.common_functions import make_and_clean_dir
-
-from Models.models import PolypDetectionModel, get_loss
-
 import tensorflow as tf
+import os
+from Utils.common_functions import make_and_clean_dir
+from Models.models import PolypDetectionModel
+from Training import training_recipe
+training_recipe.set_settings(flags)
 
 
 def set_up_gpu():
@@ -15,28 +14,28 @@ def set_up_gpu():
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
-def set_up_directories():
+def set_up_directories(checkpoint_dir_path, log_dir_path, tflite_model_dir_path):
     # returns the train log directory
     import datetime
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = 'results/logs/' + current_time
+    train_log_dir = os.path.join(log_dir_path + current_time)
     make_and_clean_dir(train_log_dir)
-    make_and_clean_dir("../results/checkpoints")
-    make_and_clean_dir("../results/TfliteModel")
+    make_and_clean_dir(checkpoint_dir_path)
+    make_and_clean_dir(tflite_model_dir_path)
     return train_log_dir
 
 
 def main(_argv):
-    training_recipe.set_settings(flags)
     set_up_gpu()
-    train_log_dir = set_up_directories()
+    train_log_dir = set_up_directories(FLAGS.checkpoint_dir_path, FLAGS.log_dir_path, FLAGS.tflite_model_dir_path)
     train_summary_writer = tf.summary.create_file_writer(train_log_dir)
     train_summary_writer.set_as_default()
 
     optimizer = tf.keras.optimizers.Adam(lr=FLAGS.learning_rate)
 
     model = PolypDetectionModel()
-    training_model = model.get_model(True)
+    model.build_model(True)
+    training_model = model.get_model()
 
     train_dataset, val_dataset = model.get_dataset()  # prepare for the train dataset and validation dataset
 
@@ -54,7 +53,7 @@ def main(_argv):
 
                 with tf.GradientTape() as tape:
                     outputs = training_model(images, training=True)
-                    pred_loss = get_loss(labels, outputs, training=True)
+                    pred_loss = model.get_loss(labels, outputs, training=True)
                     total_loss = tf.reduce_sum(pred_loss)
 
                 grads = tape.gradient(total_loss, training_model.trainable_variables)
@@ -64,7 +63,7 @@ def main(_argv):
             for batch, (images, labels) in enumerate(val_dataset):
                 outputs = training_model(images, training=True)
                 regularization_loss = tf.reduce_sum(training_model.losses)
-                pred_loss = get_loss(labels, outputs, training=False)
+                pred_loss = model.get_loss(labels, outputs, training=False)
                 total_loss = tf.reduce_sum(pred_loss)
                 avg_val_loss.update_state(total_loss)
 
@@ -78,7 +77,7 @@ def main(_argv):
 
             if epoch % FLAGS.save_points == 0 or epoch == FLAGS.epochs:
                 logging.info("-----------------------------------------------------------------------------")
-                training_model.save_weights('results/checkpoints/yolov3_train_{}.tf'.format(epoch))
+                training_model.save_weights(os.path.join(FLAGS.checkpoint_dir_path, "polyp_train_{}.tf".format(epoch)))
                 converter = tf.lite.TFLiteConverter.from_keras_model(training_model)
                 tflite_model = converter.convert()
                 open("results/TfliteModel/model{}.tflite".format(epoch), "wb").write(tflite_model)

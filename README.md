@@ -99,7 +99,7 @@ As the lack of polyp images we did image augmentation for the training dataset.
 All the images should have the same size.
 
 ```bash
-python Utils/data_augmentation.py \
+python Utils/image_augmentation.py \
                         --train_data_dir ./data/PolypImages_train \
                         --output_dir ./data/PolypImages_aug
 ```

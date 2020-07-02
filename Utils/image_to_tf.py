@@ -9,15 +9,13 @@ import lxml.etree
 
 flags.DEFINE_string('train_data_dir', '../data/OneImage_aug', 'path to raw polyp images for training')
 flags.DEFINE_string('valid_data_dir', '../data/OneImage', 'path to raw polyp images for validation')
-flags.DEFINE_string('data_dir', '../data/OneImage', 'path to raw polyp images for training and validation')
 flags.DEFINE_string('train_output_file', '../data/polyp_train.tfrecord', 'path to dataset for training in tf format')
 flags.DEFINE_string('valid_output_file', '../data/polyp_valid.tfrecord', 'path to dataset for validation in tf format')
-flags.DEFINE_string('output_file', '../data/polyp.tfrecord', 'path to output dataset in tf format')
 flags.DEFINE_string('classes', '../data/polyp.names', 'classes file')
 
 
-def build_example(annotation, n_classes, class_map):
-    img_path = (FLAGS.data_dir+'/'+ annotation['filename'])
+def build_example(data_dir, annotation, class_map):
+    img_path = (data_dir + '/' + annotation['filename'])
     img_raw = open(img_path, 'rb').read()
     key = hashlib.sha256(img_raw).hexdigest()
 
@@ -102,7 +100,7 @@ def image_to_tfrecord(classes, data_dir, output_file):
     for xml_file in xml_list:
         annotation_xml = lxml.etree.fromstring(open(xml_file).read())
         annotation = parse_xml(annotation_xml)['annotation']
-        tf_example = build_example(annotation, n_classes, class_map)
+        tf_example = build_example(data_dir, annotation, class_map)
         writer.write(tf_example.SerializeToString())
 
     writer.close()

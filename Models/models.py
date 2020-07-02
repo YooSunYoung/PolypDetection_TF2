@@ -12,7 +12,7 @@ from tensorflow.keras.layers import (
 )
 from Models import config
 import Models.dataset as dataset
-from Models.dataset import transform_targets
+from Models.dataset import PolypDataset as polyp_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -149,6 +149,7 @@ class PolypDetectionModel(ObjectDetectionModel):
             kwargs = config.configuration
         ObjectDetectionModel.__init__(self, **kwargs)
         self.train_dataset, self.valid_dataset = None, None
+        self.model = None
 
     def polyp_image_input_layer(self, name=None):
         return Input([self.size[0], self.size[1], self.n_channels], name=name)
@@ -197,8 +198,8 @@ class PolypDetectionModel(ObjectDetectionModel):
             input_dataset = input_dataset.shuffle(buffer_size=512)
             input_dataset = input_dataset.batch(batch_size)
             input_dataset = input_dataset.map(lambda x, y: (
-                dataset.transform_images(x),
-                transform_targets(y)))
+                polyp_dataset.transform_images(x),
+                polyp_dataset.transform_targets(y)))
             train_data_val_data.append(input_dataset)
         train_data_val_data[0] = train_data_val_data[0].prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         self.train_dataset, self.valid_dataset = train_data_val_data
@@ -217,7 +218,7 @@ class PolypDetectionModel(ObjectDetectionModel):
         x = half_fire(x)  # fire7
         return tf.keras.Model(inputs, x, name=name)
 
-    def get_model(self, training=False):
+    def build_model(self, training=False):
         tmp = inputs = self.polyp_image_input_layer(name='Input')
         if self.model_name == "squeeze_tiny":
             tmp = self.squeeze_net_tiny(name=self.model_name)(tmp)
@@ -225,12 +226,24 @@ class PolypDetectionModel(ObjectDetectionModel):
             logging.info("There is no model with name {a}. Please choose one of squeeze_tiny and squeeze"
                          .format(a=self.model_name))
         outputs = self.polyp_image_output_layer(tmp)
-        if training: return Model(inputs, outputs, name="MyModel")
+        if training: self.model = Model(inputs, outputs, name="MyModel")
         boxes_0 = Lambda(lambda x: self.reshape_output(x), name='yolo_boxes_0')(outputs)
         outputs = Lambda(lambda x: self.reshape_output_for_prediction(x), name='yolo_nms')(boxes_0)
-        return Model(inputs, outputs, name='MyModel')
+        self.model = Model(inputs, outputs, name='MyModel')
+
+    def get_model(self):
+        if self.model is None:
+            self.build_model()
+            logging.info("Model was not built yet so build a new model with training=False")
+        return self.model
+
+    def load_weights(self, weight_file_path):
+        if self.model is None:
+            self.build_model()
+        self.model.load_weights(weight_file_path).expect_partial()
+        logging.info('weights loaded')
 
 
 if __name__ == '__main__':
     my_model = PolypDetectionModel(**config.configuration)
-    my_model.get_model(True).summary()
+    my_model.get_model().summary()

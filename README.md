@@ -55,7 +55,7 @@ The dataset should be a set of image(`.bmp` or `.jpg`) and label(`.xml`) pairs.
 In the label(`.xml`) file, it should include the `filename`, image `size` (which consists of `width`, `height`, `channel`)
 and the `object` which is the information of polyp in this case.
 
-`object` should includes the `name` of the object which is 'Polyp' in this case.
+`object` should includes the `name` of the object such as 'Polyp' in this case.
 It also has to include the location of the bounding box around the polyp as `xmin`, `ymin`, `xmax` and `ymax`.
 
 The image files and the xml files should have same name before their file execution tag.
@@ -120,7 +120,6 @@ python Utils/image_to_tf.py \
 > I put `./data/PolypImages_aug` into the `--train_data_dir` tag since I used the augmented images as a training dataset.
  
 ### Models
-
 
 ### Training
 

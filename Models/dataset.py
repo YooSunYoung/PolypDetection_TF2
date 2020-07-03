@@ -144,7 +144,7 @@ def load_tfrecord_dataset(file_pattern, class_file, size=imageH):
 
 def load_fake_dataset():
     x_train = tf.image.decode_bmp(
-        open('./data/OneImage/001.bmp', 'rb').read(), channels=3)
+        open('../data/OneImage/001.bmp', 'rb').read(), channels=3)
     x_train = tf.expand_dims(x_train, axis=0)
 
     labels = [

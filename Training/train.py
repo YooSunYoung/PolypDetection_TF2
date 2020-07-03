@@ -1,6 +1,7 @@
 from absl import app, flags, logging
 from absl.flags import FLAGS
 import tensorflow as tf
+from tensorflow.python.tools import freeze_graph
 import os
 from Utils.common_functions import make_and_clean_dir
 from Models.models import PolypDetectionModel
@@ -18,7 +19,7 @@ def set_up_directories(checkpoint_dir_path, log_dir_path, tflite_model_dir_path)
     # returns the train log directory
     import datetime
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = os.path.join(log_dir_path + current_time)
+    train_log_dir = os.path.join(log_dir_path, current_time)
     make_and_clean_dir(train_log_dir)
     make_and_clean_dir(checkpoint_dir_path)
     make_and_clean_dir(tflite_model_dir_path)
@@ -37,9 +38,11 @@ def main(_argv):
     model.build_model(True)
     training_model = model.get_model()
 
-    train_dataset, val_dataset = model.get_dataset()  # prepare for the train dataset and validation dataset
-
-    step=0
+    train_dataset, val_dataset = model.get_dataset(train_dataset_path=FLAGS.dataset,
+                                                   val_dataset_path=FLAGS.val_dataset,
+                                                   classes_path=FLAGS.classes)
+                                                   # prepare for the train dataset and validation dataset
+    step = 0
     if FLAGS.mode == 'eager_tf':
         # Eager mode is great for debugging
         # Non eager graph mode is recommended for real training
@@ -77,10 +80,12 @@ def main(_argv):
 
             if epoch % FLAGS.save_points == 0 or epoch == FLAGS.epochs:
                 logging.info("-----------------------------------------------------------------------------")
-                training_model.save_weights(os.path.join(FLAGS.checkpoint_dir_path, "polyp_train_{}.tf".format(epoch)))
+                ckpt_filepath = os.path.join(FLAGS.checkpoint_dir_path, "polyp_train_{}.tf".format(epoch))
+                training_model.save_weights(ckpt_filepath)
                 converter = tf.lite.TFLiteConverter.from_keras_model(training_model)
                 tflite_model = converter.convert()
-                open("results/TfliteModel/model{}.tflite".format(epoch), "wb").write(tflite_model)
+                tflite_file_path = os.path.join(FLAGS.tflite_model_dir_path, "model{}.tflite".format(epoch))
+                open(tflite_file_path, "wb").write(tflite_model)
 
 
 if __name__ == '__main__':

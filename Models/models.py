@@ -2,11 +2,12 @@ import numpy as np
 import math
 import logging
 import tensorflow as tf
-from tensorflow.keras import Model
+from tensorflow.keras import Model, Sequential
 from tensorflow.keras.layers import (
     Conv2D,
     Input,
     Lambda,
+    Reshape,
     ReLU,
     MaxPool2D
 )
@@ -156,7 +157,7 @@ class PolypDetectionModel(ObjectDetectionModel):
 
     def polyp_image_output_layer(self, inputs):
         output = Conv2D(filters=self.n_boxes*5, kernel_size=1, strides=1, padding="same")(inputs)
-        output = Lambda(lambda x: tf.reshape(x, (-1, self.n_grid, self.n_grid, self.n_boxes, 5)))(output)  #5, is objProb,cx,cy,w,h
+        # output = Lambda(lambda x: tf.reshape(x, (-1, self.n_grid, self.n_grid, self.n_boxes, 5)))(output)  #5, is objProb,cx,cy,w,h
         return output
 
     def reshape_output(self, outputs):
@@ -219,6 +220,7 @@ class PolypDetectionModel(ObjectDetectionModel):
         return tf.keras.Model(inputs, x, name=name)
 
     def build_model(self, training=False):
+        self.model = Sequential()
         tmp = inputs = self.polyp_image_input_layer(name='Input')
         if self.model_name == "squeeze_tiny":
             tmp = self.squeeze_net_tiny(name=self.model_name)(tmp)
@@ -226,10 +228,14 @@ class PolypDetectionModel(ObjectDetectionModel):
             logging.info("There is no model with name {a}. Please choose one of squeeze_tiny and squeeze"
                          .format(a=self.model_name))
         outputs = self.polyp_image_output_layer(tmp)
-        if training: self.model = Model(inputs, outputs, name="MyModel")
-        boxes_0 = Lambda(lambda x: self.reshape_output(x), name='yolo_boxes_0')(outputs)
-        outputs = Lambda(lambda x: self.reshape_output_for_prediction(x), name='yolo_nms')(boxes_0)
-        self.model = Model(inputs, outputs, name='MyModel')
+        if training:
+            #self.model = Model(inputs, outputs, name="MyModel")
+            self.model.add(Model(inputs, outputs, name="MyModel"))
+            self.model.add(Reshape((self.n_grid, self.n_grid, self.n_boxes, 5)))
+        else:
+            boxes_0 = Lambda(lambda x: self.reshape_output(x), name='yolo_boxes_0')(outputs)
+            outputs = Lambda(lambda x: self.reshape_output_for_prediction(x), name='yolo_nms')(boxes_0)
+            self.model = Model(inputs, outputs, name='MyModel')
 
     def get_model(self):
         if self.model is None:
@@ -246,4 +252,5 @@ class PolypDetectionModel(ObjectDetectionModel):
 
 if __name__ == '__main__':
     my_model = PolypDetectionModel(**config.configuration)
+    my_model.build_model(True)
     my_model.get_model().summary()
